@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 set -e
 
+
+# Check if an input parameter is provided
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <input_parameter>"
+    exit 1
+fi
+
+# Assign the input parameter to a variable
+bucket_name="$1"
+
+# Use the input parameter as an output within the script
+echo "Input parameter provided: $bucket_name"
+
+# Create the S3 bucket
+aws s3api create-bucket --bucket "$bucket_name" --region us-east-1
+
+# Check if the bucket creation was successful
+if [ $? -eq 0 ]; then
+    echo "Bucket '$bucket_name' created successfully."
+else
+    echo "Failed to create bucket '$bucket_name'."
+fi
+
 echo "Create base terraform templates"
 touch main.tf data.tf outputs.tf
 
@@ -9,14 +32,9 @@ then
   echo "Create providers file"
   cat > providers.tf <<- PROVIDERS
 provider "aws" {
-  region = var.region
-
-  default_tags {
-    tags = {
-      created_by = "terraform"
-      workspace = terraform.workspace
-    }
-  }
+  #shared_credentials_file = "~/.aws/credentials"
+  profile = "cloudguru"
+  region  = "us-east-1"
 }
 PROVIDERS
 fi
@@ -46,11 +64,15 @@ if [ ! -f backend.tf ]
 then
   echo "Create backend template file"
   cat > backend.tf <<- BACKEND
+# Terraform Remote Statefile
 terraform {
   backend "s3" {
-    bucket         = "mstefanowski-terraform"
-    key            = "terraform.tfstate"     # Specify the AWS region
-    profile        = "admin"           # Enable server-side encryption
+    bucket                  = "$bucket_name"
+    key                     = "shared/state"
+    region                  = "us-east-1"
+    shared_credentials_file = "~/.aws/credentials"
+    profile                 = "cloudguru"
+    #dynamodb_table          = "vfde-cloudguru893872-tf-locks"
   }
 }
 BACKEND
@@ -65,26 +87,4 @@ cat > .gitignore <<- IGNORE
 **/.terragrunt-cache/**
 IGNORE
 
-
-# echo "Create terraform prehook"
-# mkdir -p hooks
-
-# tee hooks/pre-commit <<- PRECOMMIT
-# #!/bin/sh -e
-
-# base_path=`pwd`
-# processed_paths=()
-
-# for changed_file in `git diff --name-only`
-# do
-#   changed_path=`dirname $changed_file`
-#   if [[ ! ${processed_paths[*]} =~ $changed_path ]]
-#   then
-#     cd $base_path/$changed_path && terraform fmt -recursive && \
-#       terraform init -backend=false && terraform validate
-
-#     processed_paths+=($changed_path)
-#   fi
-# done
-# PRECOMMIT
-# chmod +x hooks/pre-commit
+exit 0
