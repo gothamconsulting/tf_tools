@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+subdirectory="./modules/vpc" 
+filename="variables.tf"
 
 # Check if an input parameter is provided
 if [ $# -eq 0 ]; then
@@ -60,6 +62,7 @@ locals {
 LOCALS
 fi
 
+
 if [ ! -f backend.tf ]
 then
   echo "Create backend template file"
@@ -79,7 +82,31 @@ BACKEND
 fi
 
 echo "Create empty modules folder"
-mkdir -p modules/vpc && touch modules/vpc/main.tf && touch modules/vpc/variables.tf && touch modules/vpc/outputs.tf
+mkdir -p modules/vpc && touch modules/vpc/main.tf && touch modules/vpc/variables.tf && touch modules/vpc/outputs.tf && touch modules/vpc/terraform.tf
+
+if [ ! -f "$subdirectory/$file_name" ]
+then
+  echo "Create variables file"
+  cat > modules/vpc/variables.tf <<- VARIABLES
+variable "var_variable_a" {
+  type        = string
+  description = "var a"
+}
+
+# ELB service account ARN
+variable "var_variable_b" {
+  type        = string
+  description = "var b"
+}
+
+# Common tags
+variable "common_tags" {
+  type        = map(string)
+  description = "Map of tags to be applied to all resources"
+  default     = {}
+}
+VARIABLES
+fi
 
 echo "Create default terraform variable file"
 mkdir -p tfvars && touch tfvars/main.tfvars
