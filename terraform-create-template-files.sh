@@ -78,6 +78,9 @@ terraform {
 BACKEND
 fi
 
+echo "Create empty modules folder"
+mkdir -p modules/vpc && touch modules/vpc/main.tf && touch modules/vpc/variables.tf && touch modules/vpc/outputs.tf
+
 echo "Create default terraform variable file"
 mkdir -p tfvars && touch tfvars/main.tfvars
 
@@ -85,6 +88,7 @@ echo "Create .gitignore file"
 cat > .gitignore <<- IGNORE
 **/.terraform/**
 **/.terragrunt-cache/**
+**/.terraform.lock.hcl/**
 IGNORE
 
 exit 0
